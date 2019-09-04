@@ -1,39 +1,32 @@
-package foo
+package foo_test
 
 import (
-	"testing"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	. "mymod/foo"
 	"time"
 )
 
-func TestFBar(t *testing.T) {
-	fBar := F(bar)
-	out := fBar(43)
-	if out != 86 {
-		t.Log(out)
-		t.Fail()
-	}
-}
+var _ = Describe("Foos", func() {
+	It("returns when invoked", func() {
+		fBar := F(bar)
+		Ω(fBar(13)).Should(Equal(26))
+	})
 
-func TestAsync(t *testing.T) {
-	fBar := F(bar).Async()
-	var nilout interface{} = "this will be overwritten"
-	for i := 0; i < 100000; i++ {
-		nilout = fBar(44)
-	}
-	out := fBar.Await()
-	if nilout != nil {
-		t.Log(nilout)
-		t.Fail()
-	}
-	if out != 88 {
-		t.Log(out)
-		t.Fail()
-	}
-}
+	Describe("Async", func() {
+		It("returns nil when invoked async", func() {
+			fBar := F(bar)
+			fBar = fBar.Async()
 
-func TestFail(t *testing.T) {
-	t.Fail()
-}
+			for i := 0; i < 10000; i++ {
+				fBar(3)
+			}
+
+			Ω(fBar.Await()).Should(Equal(6))
+		})
+	})
+})
 
 func bar(i int) int {
 	time.Sleep(20 * time.Millisecond)
