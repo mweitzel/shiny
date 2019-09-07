@@ -37,11 +37,29 @@ var _ = Describe("Foos", func() {
 		})
 
 		It("bind non-statefully", func() {
-			// wrongly statefull, how can I duplicate impl only sometimes?
 			fBaz := F(baz).Bind(1)
-			boundFbaz := fBaz.Bind(1, 1, 1)
+			boundFbaz := fBaz.Bind(1, 1)
+			boundFbaz = boundFbaz.Bind(1)
 			Ω(fBaz()).Should(Equal(1))
 			Ω(boundFbaz()).Should(Equal(4))
+			Ω(boundFbaz()).Should(Equal(4))
+		})
+
+		It("call", func() {
+			fBaz := F(baz)
+			Ω(fBaz.Call(1, 1, 1)).Should(Equal(3))
+			Ω(fBaz.Bind(1).Call(1, 1, 1)).Should(Equal(4))
+		})
+
+		It("apply", func() {
+			fBaz := F(baz)
+			Ω(fBaz.Apply([]int{1, 1, 1})).Should(Equal(3))
+			Ω(fBaz.Bind(1).Apply([]int{1, 1, 1})).Should(Equal(4))
+		})
+
+		It("shorthand", func() {
+			Ω(F(baz).B(1, 1).C(1, 1, 1)).Should(Equal(5))
+			Ω(F(baz).B(1, 1).A([]int{1, 1, 1})).Should(Equal(5))
 		})
 	})
 

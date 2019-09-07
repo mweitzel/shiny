@@ -98,10 +98,25 @@ func (ms mySpecial) Async() mySpecial {
 	}
 }
 
+func (ms mySpecial) B(bArgs ...interface{}) mySpecial { return ms.Bind(bArgs...) }
 func (ms mySpecial) Bind(bArgs ...interface{}) mySpecial {
-	// problematic, this does not duplicate impl
 	i := ms(cheat{"bind": bArgs}).(*impl)
 	return i.special()
+}
+
+func (ms mySpecial) C(bArgs ...interface{}) interface{} { return ms.Call(bArgs...) }
+func (ms mySpecial) Call(bArgs ...interface{}) interface{} {
+	return ms(bArgs...)
+}
+
+func (ms mySpecial) A(argSlice interface{}) interface{} { return ms.Apply(argSlice) }
+func (ms mySpecial) Apply(argSlice interface{}) interface{} {
+	rSlice := reflect.ValueOf(argSlice)
+	args := []interface{}{}
+	for i := 0; i < rSlice.Len(); i++ {
+		args = append(args, rSlice.Index(i).Interface())
+	}
+	return ms(args...)
 }
 
 type cheat map[string]interface{}
