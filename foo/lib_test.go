@@ -26,6 +26,27 @@ var _ = Describe("Foos", func() {
 
 			Ω(fBar.Await()).Should(Equal(6))
 		})
+
+		It("collects return values", func() {
+			fBar := F(bar)
+			fBar = fBar.Async()
+
+			for i := 0; i < 5; i++ {
+				fBar(i)
+			}
+			collection := []int{}
+			fBar.Await(&collection)
+
+			Ω(collection).Should(ConsistOf(0, 2, 4, 6, 8))
+
+			for i := 0; i < 5; i++ {
+				fBar(i)
+			}
+			collection = []int{}
+			fBar.Await(&collection)
+
+			Ω(collection).Should(ConsistOf(0, 2, 4, 6, 8))
+		})
 	})
 
 	Describe("Bind/Call/Apply", func() {
@@ -72,7 +93,6 @@ var _ = Describe("Foos", func() {
 			var b binterface = bstruct{}
 			Ω(fmt.Sprintf("%#v", Dig(b, `Foo`))).Should(ContainSubstring("(func(int) int)"))
 			Ω(Digf(b, `Foo`)(30)).Should(Equal(60))
-			//		Ω(Dig(a, `Foo.Bar`)).Should(Equal(5))
 		})
 	})
 })

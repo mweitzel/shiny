@@ -1,22 +1,24 @@
 package foo
 
 import (
+	"github.com/google/uuid"
 	"reflect"
 	"strings"
 	"sync"
 )
 
 func F(fn interface{}) mySpecial {
-	i := impl{fn: fn, wg: sync.WaitGroup{}}
+	i := impl{fn: fn, wg: sync.WaitGroup{}, collector: sync.Map{}}
 	return (&i).special()
 }
 
 type impl struct {
-	fn      interface{}
-	async   bool
-	lastOut interface{}
-	wg      sync.WaitGroup
-	bArgs   []interface{}
+	fn        interface{}
+	async     bool
+	lastOut   interface{}
+	wg        sync.WaitGroup
+	bArgs     []interface{}
+	collector sync.Map
 }
 
 func (i *impl) handleCase(arg cheat) *impl {
@@ -30,6 +32,7 @@ func (i *impl) handleCase(arg cheat) *impl {
 	if ok {
 		ix := *i
 		i = &ix
+		i.collector = sync.Map{}
 		i.bArgs = append([]interface{}{}, i.bArgs...)
 		i.bArgs = append(i.bArgs, bArgs.([]interface{})...)
 		return i
@@ -67,7 +70,9 @@ func (i *impl) special() func(args ...interface{}) interface{} {
 				if len(outs) == 0 {
 					return
 				}
-				i.lastOut = outs[0].Interface()
+				lOut := outs[0].Interface()
+				i.lastOut = lOut
+				i.collector.Store(uuid.New().String(), lOut)
 			}()
 			return nil
 		} else {
@@ -88,6 +93,19 @@ type mySpecial func(...interface{}) interface{}
 
 func (ms mySpecial) Await(args ...interface{}) interface{} {
 	i := ms(cheat{"await": true}).(*impl)
+	if len(args) > 0 {
+		collect := []interface{}{}
+		i.collector.Range(func(_, v interface{}) bool {
+			collect = append(collect, v)
+			return true
+		})
+		ptrToCollectSlice := args[0]
+		rSlice := reflect.ValueOf(ptrToCollectSlice).Elem()
+		for _, v := range collect {
+			rSlice.Set(reflect.Append(rSlice, reflect.ValueOf(v)))
+		}
+		i.collector = sync.Map{}
+	}
 	return i.lastOut
 }
 
