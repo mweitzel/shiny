@@ -1,4 +1,4 @@
-module mymod
+module github.com/mweitzel/shiny
 
 require (
 	github.com/google/uuid v1.1.1

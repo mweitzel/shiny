@@ -2,9 +2,9 @@ package foo_test
 
 import (
 	"fmt"
+	. "github.com/mweitzel/shiny/foo"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "mymod/foo"
 	"time"
 )
 
