@@ -1,15 +1,20 @@
 package foo_test
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"fmt"
 	. "mymod/foo"
 	"time"
 )
 
+func get(apiKey string, url string) string {
+	time.Sleep(1 * time.Millisecond)
+	return "payload for url: " + url
+}
+
 var _ = Describe("Foos", func() {
+
 	It("returns when invoked", func() {
 		fBar := F(bar)
 		Ω(fBar(13)).Should(Equal(26))
@@ -38,6 +43,7 @@ var _ = Describe("Foos", func() {
 			fBar.Await(&collection)
 
 			Ω(collection).Should(ConsistOf(0, 2, 4, 6, 8))
+			Ω(collection).Should(HaveLen(5))
 
 			for i := 0; i < 5; i++ {
 				fBar(i)
@@ -46,6 +52,7 @@ var _ = Describe("Foos", func() {
 			fBar.Await(&collection)
 
 			Ω(collection).Should(ConsistOf(0, 2, 4, 6, 8))
+			Ω(collection).Should(HaveLen(5))
 		})
 	})
 
@@ -55,6 +62,17 @@ var _ = Describe("Foos", func() {
 		})
 		It("bind 2", func() {
 			Ω(F(baz).Bind(1, 1, 1)()).Should(Equal(3))
+		})
+
+		It("rick bind example", func() {
+			Ω(baz(1, 1, 1)).Should(Equal(3))
+			plus := F(baz)
+			Ω(plus(1, 1, 1)).Should(Equal(3))
+			Ω(plus.Bind(1)(1, 1)).Should(Equal(3))
+
+			plus5 := plus.Bind(5)
+			Ω(plus5(4)).Should(Equal(9))
+
 		})
 
 		It("bind non-statefully", func() {
@@ -95,7 +113,50 @@ var _ = Describe("Foos", func() {
 			Ω(Digf(b, `Foo`)(30)).Should(Equal(60))
 		})
 	})
+
+	Describe("arity", func() {
+		It("detects arity for function with fixed args", func() {
+			f := func() {}
+			ff := F(f)
+			Ω(ff.Arity()).To(Equal(0))
+			g := func(i int) {}
+			fg := F(g)
+			Ω(fg.Arity()).To(Equal(1))
+		})
+		It("returns negative if the last value is variadic", func() {
+			f := func(ii ...int) {}
+			ff := F(f)
+			Ω(ff.Arity()).To(Equal(-1))
+			g := func(i int, bb ...bool) {}
+			fg := F(g)
+			Ω(fg.Arity()).To(Equal(-2))
+		})
+	})
+
+	Describe("rarity", func() {
+		It("detects arity for function returning fixed args", func() {
+			f := func() {}
+			ff := F(f)
+			Ω(ff.Rarity()).To(Equal(0))
+			g := func() int { return 23 }
+			fg := F(g)
+			Ω(fg.Rarity()).To(Equal(1))
+		})
+
+		It("returns negative is last return is an error", func() {
+			f := func() error { return err("err") }
+			ff := F(f)
+			Ω(ff.Rarity()).To(Equal(-1))
+			g := func() (int, error) { return 23, nil }
+			fg := F(g)
+			Ω(fg.Rarity()).To(Equal(-2))
+		})
+	})
 })
+
+type err string
+
+func (e err) Error() string { return string(e) }
 
 type binterface interface{ Foo(int) int }
 type bstruct struct{}

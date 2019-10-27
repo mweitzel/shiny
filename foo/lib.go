@@ -40,7 +40,10 @@ func (i *impl) handleCase(arg cheat) *impl {
 
 	if arg["await"] == true {
 		i.wg.Wait()
-		//		return i.lastOut
+		return i
+	}
+
+	if arg["inspect"] == true {
 		return i
 	}
 	return i
@@ -137,14 +140,42 @@ func (ms mySpecial) Apply(argSlice interface{}) interface{} {
 	return ms(args...)
 }
 
+func (ms mySpecial) Arity() int {
+	i := ms(cheat{"inspect": true}).(*impl)
+	rTyp := reflect.TypeOf(i.fn)
+	n := rTyp.NumIn()
+	if n != 0 && rTyp.IsVariadic() {
+		n = -n
+	}
+	return n
+}
+
+func (ms mySpecial) Rarity() int {
+	i := ms(cheat{"inspect": true}).(*impl)
+	rTyp := reflect.TypeOf(i.fn)
+	n := rTyp.NumOut()
+	if n != 0 {
+		errorInterface := reflect.TypeOf((*error)(nil)).Elem()
+		last := rTyp.Out(n - 1)
+		if last.Implements(errorInterface) {
+			return -n
+		}
+	}
+	return n
+}
+
 type cheat map[string]interface{}
 
 type special func(...interface{}) interface{}
 
-//func Async
-
 func Digf(obj interface{}, path string) mySpecial {
 	return F(Dig(obj, path))
+}
+
+type Bar struct{}
+
+type Foo interface {
+	Shit(int) error
 }
 
 func Dig(obj interface{}, path string) interface{} {
@@ -161,12 +192,6 @@ func Dig(obj interface{}, path string) interface{} {
 			}
 			method := rStruct.MethodByName(v)
 			if method.Kind() != reflect.Invalid {
-				//			fmt.Println("..............", method)
-				//			fmt.Println("..............", method.Kind())
-				//			fmt.Println("..............", method.IsValid())
-				//			fmt.Println("..............", method.CanInterface())
-				//			fmt.Printf(".............%#v\n", method.Interface())
-				//			fmt.Printf(".............%#v\n", method.Interface())
 				current = method.Interface()
 				continue
 			}
