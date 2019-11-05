@@ -1,4 +1,4 @@
-package foo_test
+package shiny_test
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestFoo(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Foo Suite")
+	RunSpecs(t, "Shiny Suite")
 }

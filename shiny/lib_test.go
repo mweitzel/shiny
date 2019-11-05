@@ -1,8 +1,8 @@
-package foo_test
+package shiny_test
 
 import (
 	"fmt"
-	. "github.com/mweitzel/shiny/foo"
+	. "github.com/mweitzel/shiny/shiny"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"time"
@@ -111,6 +111,7 @@ var _ = Describe("Foos", func() {
 			var b binterface = bstruct{}
 			Ω(fmt.Sprintf("%#v", Dig(b, `Foo`))).Should(ContainSubstring("(func(int) int)"))
 			Ω(Digf(b, `Foo`)(30)).Should(Equal(60))
+			Ω(Digf(b, `Bar`)).Should(BeNil())
 		})
 	})
 
@@ -133,6 +134,27 @@ var _ = Describe("Foos", func() {
 		})
 	})
 
+	Describe("new args", func() {
+		It("detects returns an empty args of input type", func() {
+			f := func(i int) {}
+			ff := F(f)
+			Ω(ff.NewArgs()).To(Equal([]interface{}{
+				0,
+			}))
+
+			type t struct{ foo string }
+			g := func(t) {}
+			Ω(F(g).NewArgs()).To(Equal([]interface{}{
+				t{},
+			}))
+
+			h := func(*t) {}
+			Ω(F(h).NewArgs()).To(Equal([]interface{}{
+				&t{},
+			}))
+		})
+	})
+
 	Describe("rarity", func() {
 		It("detects arity for function returning fixed args", func() {
 			f := func() {}
@@ -150,6 +172,23 @@ var _ = Describe("Foos", func() {
 			g := func() (int, error) { return 23, nil }
 			fg := F(g)
 			Ω(fg.Rarity()).To(Equal(-2))
+		})
+	})
+
+	Describe("New", func() {
+		It("can Make a nil map non-nil given a pointer to it", func() {
+			var foo map[string]interface{}
+			New(&foo)
+			foo["hi"] = 3
+			Ω(foo["hi"]).Should(Equal(3))
+		})
+
+		It("can Make a nil struct non-nil given a pointer to it", func() {
+			type tfoo struct{ bar string }
+			var foo *tfoo
+			New(&foo)
+			foo.bar = "baz"
+			Ω(foo.bar).Should(Equal("baz"))
 		})
 	})
 })

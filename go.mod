@@ -1,5 +1,7 @@
 module github.com/mweitzel/shiny
 
+go 1.13
+
 require (
 	github.com/google/uuid v1.1.1
 	github.com/onsi/ginkgo v1.10.1
@@ -9,5 +11,3 @@ require (
 	golang.org/x/sys v0.0.0-20190913121621-c3b328c6e5a7 // indirect
 	golang.org/x/text v0.3.2 // indirect
 )
-
-go 1.13

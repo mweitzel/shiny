@@ -1,4 +1,4 @@
-package foo
+package shiny
 
 import (
 	"github.com/google/uuid"
@@ -150,6 +150,22 @@ func (ms mySpecial) Arity() int {
 	return n
 }
 
+func (ms mySpecial) NewArgs() []interface{} {
+	i := ms(cheat{"inspect": true}).(*impl)
+	outs := []interface{}{}
+	for j := 0; j < reflect.TypeOf(i.fn).NumIn(); j++ {
+		var out interface{}
+		outType := reflect.TypeOf(i.fn).In(j)
+		if outType.Kind() == reflect.Ptr {
+			out = reflect.New(outType.Elem()).Interface()
+		} else {
+			out = reflect.New(outType).Elem().Interface()
+		}
+		outs = append(outs, out)
+	}
+	return outs
+}
+
 func (ms mySpecial) Rarity() int {
 	i := ms(cheat{"inspect": true}).(*impl)
 	rTyp := reflect.TypeOf(i.fn)
@@ -169,7 +185,11 @@ type cheat map[string]interface{}
 type special func(...interface{}) interface{}
 
 func Digf(obj interface{}, path string) mySpecial {
-	return F(Dig(obj, path))
+	maybeFn := Dig(obj, path)
+	if maybeFn == nil {
+		return nil
+	}
+	return F(maybeFn)
 }
 
 type Bar struct{}
@@ -177,6 +197,22 @@ type Bar struct{}
 type Foo interface {
 	Shit(int) error
 }
+
+func New(ptrToThing interface{}) {
+	rpThing := reflect.ValueOf(ptrToThing)
+	indirectThing := reflect.Indirect(rpThing)
+
+	switch rpThing.Elem().Kind() {
+	case reflect.Ptr: // because pointer to struct?
+		newThing := reflect.New(indirectThing.Type().Elem())
+		indirectThing.Set(newThing)
+	case reflect.Map:
+		newThing := reflect.MakeMap(indirectThing.Type())
+		indirectThing.Set(newThing)
+	}
+}
+
+func wat(interface{}) {}
 
 func Dig(obj interface{}, path string) interface{} {
 	current := obj
