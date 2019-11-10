@@ -218,23 +218,49 @@ func Dig(obj interface{}, path string) interface{} {
 	current := obj
 	for _, v := range strings.Split(path, ".") {
 		rStruct := reflect.ValueOf(current)
-		if rStruct.Kind() == reflect.Struct {
-			field := rStruct.FieldByName(v)
-			if field.Kind() != reflect.Invalid {
-				if !IsZero(field) {
-					current = field.Interface()
-					continue
-				}
-			}
-			method := rStruct.MethodByName(v)
-			if method.Kind() != reflect.Invalid {
-				current = method.Interface()
-				continue
-			}
+
+		var found bool
+		current, found = getField(rStruct, v)
+		if found {
+			continue
 		}
+
+		current, found = getMethod(rStruct, v)
+		if found {
+			continue
+		}
+
 		return nil
 	}
 	return current
+}
+
+func getField(rVal reflect.Value, name string) (interface{}, bool) {
+	if rVal.Kind() == reflect.Struct {
+		field := rVal.FieldByName(name)
+		if field.Kind() != reflect.Invalid {
+			return field.Interface(), true
+		}
+	} else if rVal.Kind() == reflect.Ptr {
+		return getField(reflect.Indirect(rVal), name)
+	}
+	return nil, false
+}
+
+func getMethod(rVal reflect.Value, name string) (interface{}, bool) {
+	if rVal.Kind() == reflect.Struct {
+		method := rVal.MethodByName(name)
+		if method.Kind() != reflect.Invalid {
+			return method.Interface(), true
+		}
+	} else if rVal.Kind() == reflect.Ptr {
+		method := rVal.MethodByName(name)
+
+		if method.Kind() != reflect.Invalid {
+			return method.Interface(), true
+		}
+	}
+	return nil, false
 }
 
 // go 1.11 bullshit, bump go and use reflect.Value.IsZero()

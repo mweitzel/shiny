@@ -113,6 +113,19 @@ var _ = Describe("Foos", func() {
 			Ω(Digf(b, `Foo`)(30)).Should(Equal(60))
 			Ω(Digf(b, `Bar`)).Should(BeNil())
 		})
+
+		It("can get ptr stuff", func() {
+			type B struct{ Bar int }
+			a := struct{ Foo B }{Foo: B{Bar: 5}}
+			Ω(Dig(&a, `Foo`)).Should(Equal(B{Bar: 5}))
+			Ω(Dig(&a, `Foo.Bar`)).Should(Equal(5))
+			Ω(Dig(&a, `Foo.Bat`)).Should(BeNil())
+			var b binterface = &bstruct{}
+			Ω(Digf(b, `Foo`)(30)).Should(Equal(60))
+			Ω(fmt.Sprintf("%#v", Dig(b, `XFoo`))).Should(ContainSubstring("(func(int) int)"))
+			Ω(Digf(b, `XFoo`)(30)).Should(Equal(60))
+			Ω(Digf(b, `Bar`)).Should(BeNil())
+		})
 	})
 
 	Describe("arity", func() {
@@ -200,7 +213,8 @@ func (e err) Error() string { return string(e) }
 type binterface interface{ Foo(int) int }
 type bstruct struct{}
 
-func (b bstruct) Foo(i int) int { return 2 * i }
+func (b bstruct) Foo(i int) int   { return 2 * i }
+func (b *bstruct) XFoo(i int) int { return 2 * i }
 
 func bar(i int) int {
 	time.Sleep(20 * time.Millisecond)
